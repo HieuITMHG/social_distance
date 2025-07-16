@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: #f1f5f9;
+            overflow: hidden;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .upload-card {
+            background: #fff;
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+            padding: 32px 24px;
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 32px;
+            text-align: center;
+            letter-spacing: -1px;
+        }
+        .nav-btn {
+            position: absolute;
+            top: 32px;
+            right: 48px;
+        }
+        #result-content {
+            margin-top: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #result-content img {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            margin: 0 auto;
+            display: block;
+        }
+        @media (max-width: 600px) {
+            .upload-card { padding: 16px 8px; }
+            .title { font-size: 1.5rem; margin-bottom: 16px; }
+            .nav-btn { right: 16px; top: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="btn btn-primary px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 nav-btn">Detect from Webcam</a>
+    <div class="main-center">
+        <div class="title">Detect from Image or Video</div>
+        <div class="upload-card">
+            <div class="flex flex-col md:flex-row gap-6">
+                <div class="flex-1">
+                    <label class="block mb-2 font-medium">Upload Image</label>
+                    <input type="file" id="image-upload" accept="image/*" class="block w-full mb-4">
+                    <button id="process-image" class="btn bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 disabled:opacity-50" disabled>Detect Image</button>
+                </div>
+                <div class="flex-1">
+                    <label class="block mb-2 font-medium">Upload Video</label>
+                    <input type="file" id="video-upload" accept="video/*" class="block w-full mb-4">
+                    <button id="process-video" class="btn bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700 disabled:opacity-50" disabled>Detect Video</button>
+                </div>
+            </div>
+        </div>
+        <div id="result-content"></div>
+    </div>
+    <script>
+        // Disable webcam stream nếu có
+        window.onload = function() {
+            if(window.stream) {
+                window.stream.getTracks().forEach(track => track.stop());
+            }
+        };
+        // Image upload
+        const imageInput = document.getElementById('image-upload');
+        const imageBtn = document.getElementById('process-image');
+        imageInput.addEventListener('change', (e) => {
+            imageBtn.disabled = !e.target.files.length;
+        });
+        imageBtn.addEventListener('click', () => {
+            const file = imageInput.files[0];
+            if(file) {
+                const formData = new FormData();
+                formData.append('image', file);
+                fetch('/detect_image/', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.result) {
+                        document.getElementById('result-content').innerHTML = `<img src="data:image/jpeg;base64,${data.result}">`;
+                    } else {
+                        document.getElementById('result-content').innerHTML = '<p class="text-red-600">Detection failed.</p>';
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('result-content').innerHTML = '<p class="text-red-600">Error uploading image.</p>';
+                });
+            }
+        });
+        // Video upload detect thực
+        const videoInput = document.getElementById('video-upload');
+        const videoBtn = document.getElementById('process-video');
+        videoInput.addEventListener('change', (e) => {
+            videoBtn.disabled = !e.target.files.length;
+        });
+        videoBtn.addEventListener('click', () => {
+            const file = videoInput.files[0];
+            if(file) {
+                const formData = new FormData();
+                formData.append('video', file);
+                document.getElementById('result-content').innerHTML = '<p class="text-gray-600">Processing video, please wait...</p>';
+                fetch('/detect_video/', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => {
+                    if(!res.ok) throw new Error('Detect failed');
+                    return res.blob();
+                })
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    document.getElementById('result-content').innerHTML = `
+                        <video id="result-video" controls style="max-width:100%; max-height:60vh; border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,0.12); object-fit:contain; display:block; margin:0 auto; background:#000;"></video>
+                        <div class="mt-4 flex justify-center">
+                            <a id="download-link" href="${url}" download="detected.mp4" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Tải video kết quả</a>
+                        </div>
+                    `;
+                    const video = document.getElementById('result-video');
+                    video.src = url;
+                    video.load();
+                })
+                .catch(() => {
+                    document.getElementById('result-content').innerHTML = '<p class="text-red-600">Error processing video.</p>';
+                });
+            }
+        });
+    </script>
+</body>
+</html> 

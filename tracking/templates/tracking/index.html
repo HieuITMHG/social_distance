@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam Detection</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            background: #f1f5f9;
+            overflow: hidden;
+        }
+        body {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .main-center {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .video-container {
+            max-width: 1200px;
+            width: 90vw;
+            height: 80vh;
+            background: #000;
+            border-radius: 16px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+        }
+        .title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 32px;
+            text-align: center;
+            letter-spacing: -1px;
+        }
+        .nav-btn {
+            position: absolute;
+            top: 32px;
+            right: 48px;
+        }
+        @media (max-width: 600px) {
+            .video-container { height: 35vh; }
+            .title { font-size: 1.5rem; margin-bottom: 16px; }
+            .nav-btn { right: 16px; top: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <a href="/upload/" class="btn btn-primary px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-700 nav-btn">Detect from Image/Video</a>
+    <div class="main-center">
+        <div class="title">Webcam Real-time Detection</div>
+        <div class="video-container">
+            <img id="video-feed" src="/video_feed" alt="Camera Stream" style="width:100%; height:100%; object-fit:contain; display:block;">
+        </div>
+    </div>
+    <script>
+        window.addEventListener('beforeunload', function() {
+            document.getElementById('video-feed').src = '';
+        });
+    </script>
+</body>
+</html>

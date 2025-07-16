@@ -1,0 +1,14 @@
+Django>=3.2
+channels
+channels_redis
+djangorestframework
+opencv-python
+numpy
+Pillow
+torch
+ultralytics
+seaborn
+matplotlib
+scipy
+pandas
+tqdm
