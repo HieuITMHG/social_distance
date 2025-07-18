@@ -8,4 +8,5 @@ urlpatterns = [
     path('detect_video/', views.detect_video, name='detect_video'),
     path('upload/', views.upload_detect, name='upload_detect'),
     path('webcam/', views.webcam_detect, name='webcam_detect'),
+    path('webcams/', views.webcam_view, name='webcam'),
 ]

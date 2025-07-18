@@ -97,3 +97,36 @@ def webcam_detect(request):
 
 def upload_detect(request):
     return render(request, 'tracking/upload_detect.html')
+
+def gen_ip_webcam():
+    # URL stream từ IP Webcam (thay bằng IP thực của điện thoại)
+    stream_url = 'http://192.168.1.3:8080/video'  # Cập nhật IP/port từ IP Webcam
+    cap = cv2.VideoCapture(stream_url)
+    
+    if not cap.isOpened():
+        print("Error: Could not open IP Webcam stream")
+        return
+    
+    tracker = webcam_tracker
+    try:
+        while True:
+            ret, frame = cap.read()
+            if not ret:
+                print("Failed to grab frame from IP Webcam")
+                break
+            
+            # Xử lý frame bằng PersonTracker
+            detections, _ = tracker.detect_persons(frame)
+            tracker.update_tracks(detections)
+            tracker.draw_tracks(frame)
+            
+            # Chuyển frame sang JPEG
+            _, jpeg = cv2.imencode('.jpg', frame)
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n\r\n')
+    finally:
+        cap.release()
+
+def webcam_view(request):
+    # Stream video đã xử lý từ IP Webcam
+    return StreamingHttpResponse(gen_ip_webcam(), content_type='multipart/x-mixed-replace; boundary=frame')
