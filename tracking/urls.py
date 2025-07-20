@@ -2,11 +2,12 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
-    path('', views.index, name='index'),
-    path('video_feed/', views.video_feed, name='video_feed'),
+    path('', views.multi_youtube, name='multi_youtube'),
+    path('stream/webcam/', views.stream_webcam, name='stream_webcam'),
+    path('stream/yt1/', views.stream_yt1, name='stream_yt1'),
+    path('stream/yt2/', views.stream_yt2, name='stream_yt2'),
+    path('stream/yt3/', views.stream_yt3, name='stream_yt3'),
+    path('upload/', views.detect_upload, name='upload_detect'),
     path('detect_image/', views.detect_image, name='detect_image'),
     path('detect_video/', views.detect_video, name='detect_video'),
-    path('upload/', views.upload_detect, name='upload_detect'),
-    path('webcam/', views.webcam_detect, name='webcam_detect'),
-    path('webcams/', views.webcam_view, name='webcam'),
 ]

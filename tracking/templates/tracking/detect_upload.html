@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detect from Image/Video</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #232526 0%, #414345 100%);
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', Arial, sans-serif;
+        }
+        .main-center {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .upload-card {
+            background: #fff;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+            padding: 36px 28px;
+            max-width: 600px;
+            width: 100%;
+            margin: 0 auto;
+        }
+        .title {
+            font-size: 2.1rem;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 32px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .nav-btn {
+            position: absolute;
+            top: 32px;
+            right: 48px;
+        }
+        #result-content {
+            margin-top: 32px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #result-content img, #result-content video {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+            margin: 0 auto;
+            display: block;
+            background: #000;
+        }
+        .btn {
+            background: linear-gradient(90deg, #38bdf8 0%, #0ea5e9 100%);
+            color: #fff;
+            font-weight: 700;
+            font-size: 1rem;
+            padding: 10px 24px;
+            border: none;
+            border-radius: 32px;
+            box-shadow: 0 2px 12px rgba(56,189,248,0.10);
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            outline: none;
+        }
+        .btn:hover {
+            background: linear-gradient(90deg, #0ea5e9 0%, #38bdf8 100%);
+            box-shadow: 0 4px 24px rgba(56,189,248,0.18);
+        }
+        .flex-row {
+            display: flex;
+            flex-direction: row;
+            gap: 24px;
+        }
+        .flex-1 { flex: 1; }
+        @media (max-width: 700px) {
+            .upload-card { padding: 16px 8px; }
+            .title { font-size: 1.3rem; margin-bottom: 16px; }
+            .nav-btn { right: 16px; top: 16px; }
+            .flex-row { flex-direction: column; gap: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <a href="/" class="btn nav-btn">Back to Cameras</a>
+    <div class="main-center">
+        <div class="title">Detect from Image or Video</div>
+        <div class="upload-card">
+            <div class="flex-row">
+                <div class="flex-1">
+                    <label class="block mb-2 font-medium">Upload Image</label>
+                    <input type="file" id="image-upload" accept="image/*" class="block w-full mb-4">
+                    <button id="process-image" class="btn" disabled>Detect Image</button>
+                </div>
+                <div class="flex-1">
+                    <label class="block mb-2 font-medium">Upload Video</label>
+                    <input type="file" id="video-upload" accept="video/*" class="block w-full mb-4">
+                    <button id="process-video" class="btn" disabled>Detect Video</button>
+                </div>
+            </div>
+        </div>
+        <div id="result-content"></div>
+    </div>
+    <script>
+        // Image upload
+        const imageInput = document.getElementById('image-upload');
+        const imageBtn = document.getElementById('process-image');
+        imageInput.addEventListener('change', (e) => {
+            imageBtn.disabled = !e.target.files.length;
+        });
+        imageBtn.addEventListener('click', () => {
+            const file = imageInput.files[0];
+            if(file) {
+                const formData = new FormData();
+                formData.append('image', file);
+                fetch('/detect_image/', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if(data.result) {
+                        document.getElementById('result-content').innerHTML = `<img src="data:image/jpeg;base64,${data.result}">`;
+                    } else {
+                        document.getElementById('result-content').innerHTML = '<p style="color:#e11d48;">Detection failed.</p>';
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('result-content').innerHTML = '<p style="color:#e11d48;">Error uploading image.</p>';
+                });
+            }
+        });
+        // Video upload
+        const videoInput = document.getElementById('video-upload');
+        const videoBtn = document.getElementById('process-video');
+        videoInput.addEventListener('change', (e) => {
+            videoBtn.disabled = !e.target.files.length;
+        });
+        videoBtn.addEventListener('click', () => {
+            const file = videoInput.files[0];
+            if(file) {
+                const formData = new FormData();
+                formData.append('video', file);
+                document.getElementById('result-content').innerHTML = '<p style="color:#334155;">Processing video, please wait...</p>';
+                fetch('/detect_video/', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(res => {
+                    if(!res.ok) throw new Error('Detect failed');
+                    return res.blob();
+                })
+                .then(blob => {
+                    const url = URL.createObjectURL(blob);
+                    document.getElementById('result-content').innerHTML = `
+                        <video id="result-video" controls style="max-width:100%; max-height:60vh; border-radius:12px; box-shadow:0 4px 16px rgba(0,0,0,0.12); object-fit:contain; display:block; margin:0 auto; background:#000;"></video>
+                        <div style="margin-top:18px; text-align:center;">
+                            <a id="download-link" href="${url}" download="detected.mp4" class="btn">Download Result Video</a>
+                        </div>
+                    `;
+                    const video = document.getElementById('result-video');
+                    video.src = url;
+                    video.load();
+                })
+                .catch(() => {
+                    document.getElementById('result-content').innerHTML = '<p style="color:#e11d48;">Error processing video.</p>';
+                });
+            }
+        });
+    </script>
+</body>
+</html> 
