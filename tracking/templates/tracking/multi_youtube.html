@@ -34,7 +34,7 @@
         }
         .cams-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr;
             grid-template-rows: 1fr 1fr;
             gap: 32px;
             height: 100%;
@@ -115,6 +115,13 @@
             font-size: 0.98rem;
             color: #cbd5e1;
         }
+        .log-entry {
+            margin-bottom: 8px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            border-left: 3px solid #38bdf8;
+        }
         .upload-btn {
             position: fixed;
             top: 32px;
@@ -155,25 +162,16 @@
         <div class="cams-grid">
             <div class="cam-box">
                 <div class="cam-title">Camera 1</div>
-                <img class="cam-stream" id="cam1" src="{% url 'stream_webcam' %}" alt="Camera 1">
+                <img class="cam-stream" id="cam1" src="{% url 'stream_cam1' %}" alt="Camera 1">
             </div>
             <div class="cam-box">
                 <div class="cam-title">Camera 2</div>
-                <img class="cam-stream" id="cam2" src="{% url 'stream_yt1' %}" alt="Camera 2">
-            </div>
-            <div class="cam-box">
-                <div class="cam-title">Camera 3</div>
-                <img class="cam-stream" id="cam3" src="{% url 'stream_yt2' %}" alt="Camera 3">
-            </div>
-            <div class="cam-box">
-                <div class="cam-title">Camera 4</div>
-                <img class="cam-stream" id="cam4" src="{% url 'stream_yt3' %}" alt="Camera 4">
+                <img class="cam-stream" id="cam2" src="{% url 'stream_cam2' %}" alt="Camera 2">
             </div>
         </div>
         <div class="log-panel">
             <div class="log-title">System Log</div>
-            <div class="log-content">
-                <!-- Placeholder: Bạn có thể render log thực tế ở đây bằng websocket hoặc AJAX -->
+            <div class="log-content" id="logContainer">
                 <p>Welcome to the multi-camera surveillance system!</p>
                 <p>All camera streams are running.</p>
                 <p>Detection logs and system events will appear here.</p>
@@ -181,19 +179,62 @@
         </div>
     </div>
     <script>
+        // Sửa lỗi Cannot set properties of null
         function stopAllStreams() {
-            document.getElementById('cam1').src = '';
-            document.getElementById('cam2').src = '';
-            document.getElementById('cam3').src = '';
-            document.getElementById('cam4').src = '';
+            const cam1 = document.getElementById('cam1');
+            const cam2 = document.getElementById('cam2');
+            if (cam1) cam1.src = '';
+            if (cam2) cam2.src = '';
         }
+
         function goToUpload() {
-            stopAllStreams();
+            try {
+                stopAllStreams();
+            } catch (e) {
+                console.error('Error stopping streams:', e);
+            }
+            // Giảm độ trễ để chuyển hướng nhanh hơn
             setTimeout(function() {
                 window.location.href = '{% url 'upload_detect' %}';
-            }, 100);
+            }, 50);
         }
+
+        // WebSocket để nhận log vi phạm
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(wsProtocol + '//' + window.location.host + '/ws/violations/');
+        ws.onopen = function() {
+            console.log('WebSocket connected');
+            // Xóa placeholder ban đầu khi kết nối thành công
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML = '<p>Connected to violation log...</p>';
+        };
+        ws.onmessage = function(event) {
+            const data = JSON.parse(event.data);
+            if (data.message && data.message !== 'Connected to violation log') {
+                const logContainer = document.getElementById('logContainer');
+                const logEntry = document.createElement('div');
+                logEntry.className = 'log-entry';
+                const timestamp = new Date(data.timestamp * 1000).toLocaleTimeString();
+                logEntry.textContent = `[${timestamp}] Camera ${data.camera_id}: ${data.message}`;
+                logContainer.appendChild(logEntry);
+                logContainer.scrollTop = logContainer.scrollHeight; // Cuộn xuống cuối
+            }
+        };
+        ws.onclose = function() {
+            console.error('WebSocket closed');
+            const logContainer = document.getElementById('logContainer');
+            logContainer.innerHTML += '<p class="log-entry">WebSocket disconnected. Reconnecting...</p>';
+            // Thử kết nối lại sau 5 giây
+            setTimeout(() => {
+                window.location.reload();
+            }, 5000);
+        };
+        ws.onerror = function(error) {
+            console.error('WebSocket error:', error);
+        };
+
+        // Dừng stream khi rời trang
         window.addEventListener('beforeunload', stopAllStreams);
     </script>
 </body>
-</html> 
+</html>

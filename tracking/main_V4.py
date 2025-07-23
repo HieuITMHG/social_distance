@@ -17,6 +17,9 @@ import sqlite3
 from pathlib import Path
 from tracking import config_system
 from datetime import datetime
+
+VIOLATION_LOG_QUEUE = queue.Queue(maxsize=100)
+
 # Cấu hình logging
 logging.basicConfig(
     level=logging.INFO,
@@ -470,8 +473,19 @@ class PersonTracker:
                         
                         if close_time >= self.WARNING_DURATION and pair_key not in self.warned_pairs:
                             self.warned_pairs.add(pair_key)
-                            self.logger.warning(f"Social distance violation: ID {id1} and {id2} "
-                                              f"too close for {close_time:.1f}s (distance: {distance:.2f}m)")
+                            violation_log = {
+                                'camera_id': self.camera_id,
+                                'id1': id1,
+                                'id2': id2,
+                                'distance': float(distance),
+                                'timestamp': time.time(),
+                                'message': f"ID {id1} and {id2} too close for {close_time:.1f}s (distance: {distance:.2f}m)"
+                            }
+                            self.logger.warning(violation_log['message'])
+                            try:
+                                VIOLATION_LOG_QUEUE.put_nowait(violation_log)
+                            except queue.Full:
+                                self.logger.warning("Violation log queue full, dropping log")
                 else:
                     self.warned_pairs.discard(pair_key)
         

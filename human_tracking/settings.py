@@ -132,3 +132,11 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+# ASGI_APPLICATION = 'human_tracking.asgi.application'
+
+# CHANNEL_LAYERS = {
+#     'default': {
+#         'BACKEND': 'channels.layers.InMemoryChannelLayer',
+#     },
+# }
