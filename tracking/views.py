@@ -17,8 +17,34 @@ import traceback
 import torch
 from contextlib import contextmanager
 import json
+from tracking.main_V4 import VIOLATION_LOG_QUEUE
 
 logger = logging.getLogger("detect_upload")
+
+def stream_violation_logs(request):
+    def log_generator():
+        # Initial message
+        yield 'data: {"message": "Connected to violation log"}\n\n'
+        while True:
+            try:
+                # Get log from queue without blocking
+                log = VIOLATION_LOG_QUEUE.get_nowait()
+                # Format log as SSE data
+                log_data = json.dumps(log)
+                print(log_data)
+                yield f'data: {log_data}\n\n'
+            except:
+                # Sleep briefly to avoid busy loop
+                time.sleep(0.1)
+                yield ': keepalive\n\n'  # Send keepalive to maintain connection
+
+    response = StreamingHttpResponse(
+        log_generator(),
+        content_type='text/event-stream'
+    )
+    response['Cache-Control'] = 'no-cache'
+    response['X-Accel-Buffering'] = 'no'  # Disable buffering in proxies like Nginx
+    return response
 
 CAMERA_CONFIGS = [
     main_V4.CameraConfig(

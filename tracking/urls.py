@@ -8,4 +8,5 @@ urlpatterns = [
     path('upload/', views.detect_upload, name='upload_detect'),
     path('detect_image/', views.detect_image, name='detect_image'),
     path('detect_video/', views.detect_video, name='detect_video'),
+    path('stream/logs/', views.stream_violation_logs, name='stream_violation_logs'),
 ]

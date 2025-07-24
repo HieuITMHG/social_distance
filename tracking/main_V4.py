@@ -463,6 +463,7 @@ class PersonTracker:
                 self.distance_history[pair_key].append(distance)
                 
                 if distance < self.SOCIAL_DISTANCE_THRESHOLD:
+                    print("Quá trớn rồi, xích lên dùm đi")
                     close_pairs.append((id1, id2, distance))
                     
                     # Check warning condition
@@ -470,8 +471,10 @@ class PersonTracker:
                         close_frames = sum(1 for d in self.distance_history[pair_key] 
                                          if d < self.SOCIAL_DISTANCE_THRESHOLD)
                         close_time = close_frames / self.current_fps
+                        print(f"Close time: {close_time}s")
                         
-                        if close_time >= self.WARNING_DURATION and pair_key not in self.warned_pairs:
+                        if close_time >= 1:
+                            print("aldkas;flksdlfsdlfksdlfjkhsdkfjhsdlkfjhsdkfh")
                             self.warned_pairs.add(pair_key)
                             violation_log = {
                                 'camera_id': self.camera_id,
@@ -484,6 +487,7 @@ class PersonTracker:
                             self.logger.warning(violation_log['message'])
                             try:
                                 VIOLATION_LOG_QUEUE.put_nowait(violation_log)
+                                self.logger.info(violation_log['message'])
                             except queue.Full:
                                 self.logger.warning("Violation log queue full, dropping log")
                 else:

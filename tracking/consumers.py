@@ -14,6 +14,9 @@ class ViolationLogConsumer(WebsocketConsumer):
             while True:
                 try:
                     log = VIOLATION_LOG_QUEUE.get_nowait()
+                    print("LOG=============================LOG")
+                    print(log)
+                    print("LOG=============================LOG")
                     self.send(text_data=json.dumps(log))
                 except:
                     time.sleep(0.1)  # Ngủ ngắn để tránh busy loop
